@@ -15,7 +15,7 @@ import javax.swing.SwingUtilities;
 public class PruebaPanelRegistroProducto {
    public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            // Simula códigos ya guardados para probar cómo reacciona el formulario
+            
             Set<String> codigosRegistrados = new HashSet<>();
 
             PanelRegistroProducto panel = new PanelRegistroProducto((Producto producto) -> {
