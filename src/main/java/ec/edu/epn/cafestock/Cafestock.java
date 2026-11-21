@@ -41,6 +41,25 @@ public class Cafestock {
             return;
         }
 
+        panelProductos.setAlGuardarEdicion(productoEditado -> {
+            List<Producto> productosActualizados;
+
+            try {
+                productosActualizados =
+                        servicio.actualizarProducto(productoEditado);
+            } catch (RuntimeException error) {
+                throw new IllegalStateException(
+                        "No se pudo guardar los cambios del producto.\n"
+                                + error.getMessage(),
+                        error
+                );
+            }
+
+            panelProductos.mostrarProductos(
+                    productosActualizados
+            );
+        });
+
         PanelRegistroProducto panelRegistro =
                 new PanelRegistroProducto(producto -> {
 

@@ -5,9 +5,14 @@
 package ec.edu.epn.cafestock.vista;
 
 import ec.edu.epn.cafestock.modelo.Producto;
-import java.util.List;
 import ec.edu.epn.cafestock.negocio.BuscadorProductos;
+import java.awt.Frame;
+import java.awt.Window;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -20,6 +25,7 @@ public class PanelProductos extends javax.swing.JPanel {
      */
     private final ProductoTableModel modeloTabla = new ProductoTableModel();
     private List<Producto> productosCompletos = new ArrayList<>();
+    private Consumer<Producto> alGuardarEdicion;
 
     public PanelProductos() {
         initComponents();
@@ -27,6 +33,10 @@ public class PanelProductos extends javax.swing.JPanel {
         tablaProductos.setModel(modeloTabla);
         tablaProductos.setFillsViewportHeight(true);
         tablaProductos.getTableHeader().setReorderingAllowed(false);
+    }
+
+    public void setAlGuardarEdicion(Consumer<Producto> alGuardarEdicion) {
+        this.alGuardarEdicion = alGuardarEdicion;
     }
 
     public void mostrarProductos(List<Producto> productos) {
@@ -44,6 +54,77 @@ public class PanelProductos extends javax.swing.JPanel {
         modeloTabla.actualizarProductos(filtrados);
     }
 
+    private void abrirEdicionProductoSeleccionado() {
+        int filaVista = tablaProductos.getSelectedRow();
+        if (filaVista < 0) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Selecciona un producto de la tabla para editar.",
+                    "Sin selección",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        int filaModelo = tablaProductos.convertRowIndexToModel(filaVista);
+        Producto seleccionado = modeloTabla.obtenerProductoEn(filaModelo);
+        if (seleccionado == null) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No se pudo obtener el producto seleccionado.",
+                    "Selección inválida",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        Window ventana = SwingUtilities.getWindowAncestor(this);
+        Frame padre = ventana instanceof Frame frame ? frame : null;
+
+        DialogoEditarProducto dialogo = new DialogoEditarProducto(
+                padre,
+                true,
+                seleccionado,
+                editado -> {
+                    if (alGuardarEdicion != null) {
+                        alGuardarEdicion.accept(editado);
+                    }
+                    refrescarProductoEnLista(editado);
+                }
+        );
+        dialogo.setVisible(true);
+    }
+
+    private void refrescarProductoEnLista(Producto editado) {
+        List<Producto> nuevaLista = new ArrayList<>();
+        boolean reemplazado = false;
+
+        for (Producto item : productosCompletos) {
+            if (item != null && item.getCodigo().equalsIgnoreCase(editado.getCodigo())) {
+                nuevaLista.add(editado);
+                reemplazado = true;
+            } else if (item != null) {
+                nuevaLista.add(item);
+            }
+        }
+
+        if (!reemplazado) {
+            for (int i = 0; i < modeloTabla.getRowCount(); i++) {
+                Producto item = modeloTabla.obtenerProductoEn(i);
+                if (item != null) {
+                    if (item.getCodigo().equalsIgnoreCase(editado.getCodigo())) {
+                        nuevaLista.add(editado);
+                    } else {
+                        nuevaLista.add(item);
+                    }
+                }
+            }
+        }
+
+        this.productosCompletos = nuevaLista;
+        filtrarProductos();
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -57,6 +138,7 @@ public class PanelProductos extends javax.swing.JPanel {
         jLabel1 = new javax.swing.JLabel();
         panelBusqueda = new javax.swing.JPanel();
         panelBotones = new javax.swing.JPanel();
+        BtnEditar = new javax.swing.JButton();
         btnMostrarTodos = new javax.swing.JButton();
         btnBuscar = new javax.swing.JButton();
         lblCodigoNombre = new javax.swing.JLabel();
@@ -82,6 +164,14 @@ public class PanelProductos extends javax.swing.JPanel {
         panelBusqueda.setLayout(new java.awt.BorderLayout(8, 0));
 
         panelBotones.setBackground(new java.awt.Color(250, 248, 245));
+
+        BtnEditar.setBackground(new java.awt.Color(235, 222, 209));
+        BtnEditar.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        BtnEditar.setForeground(new java.awt.Color(35, 23, 16));
+        BtnEditar.setText("Editar");
+        BtnEditar.setPreferredSize(null);
+        BtnEditar.addActionListener(this::BtnEditarActionPerformed);
+        panelBotones.add(BtnEditar);
 
         btnMostrarTodos.setBackground(new java.awt.Color(235, 222, 209));
         btnMostrarTodos.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
@@ -150,8 +240,13 @@ public class PanelProductos extends javax.swing.JPanel {
         filtrarProductos();
     }//GEN-LAST:event_txtBusquedaActionPerformed
 
+    private void BtnEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnEditarActionPerformed
+        abrirEdicionProductoSeleccionado();
+    }//GEN-LAST:event_BtnEditarActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton BtnEditar;
     private javax.swing.JButton btnBuscar;
     private javax.swing.JButton btnMostrarTodos;
     private javax.swing.JLabel jLabel1;
