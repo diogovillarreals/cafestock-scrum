@@ -1,7 +1,7 @@
 package ec.edu.epn.cafestock.servicio;
 
 import ec.edu.epn.cafestock.modelo.Producto;
-import ec.edu.epn.cafestock.persistencia.GestorInventarioArchivo;
+import ec.edu.epn.cafestock.persistencia.RepositorioProductos;
 import ec.edu.epn.cafestock.validacion.ValidarCampos;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,13 +10,13 @@ import java.util.Objects;
 
 public class RegistroProductos {
 
-    private final GestorInventarioArchivo gestorInventario;
+    private final RepositorioProductos gestorInventario;
 
-    public RegistroProductos(GestorInventarioArchivo gestorInventario) {
+    public RegistroProductos(RepositorioProductos gestorInventario) {
         this.gestorInventario = Objects.requireNonNull(gestorInventario);
     }
 
-    public synchronized void registrar(Producto producto) {
+    public synchronized List<Producto> registrar(Producto producto) {
         String codigo = ValidarCampos.validarObligatorio(producto.getCodigo(), "Código");
         String codigoNormalizado = codigo.toUpperCase(Locale.ROOT);
         List<Producto> productos = new ArrayList<>(gestorInventario.cargar());
@@ -30,5 +30,7 @@ public class RegistroProductos {
 
         productos.add(producto);
         gestorInventario.guardar(productos);
+
+        return List.copyOf(productos);
     }
 }
