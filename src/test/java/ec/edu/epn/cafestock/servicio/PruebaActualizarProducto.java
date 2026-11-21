@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import ec.edu.epn.cafestock.validacion.ValidarEdicionProducto;
 
 public class PruebaActualizarProducto {
 
@@ -28,9 +29,13 @@ public class PruebaActualizarProducto {
 
         repositorio.guardar(List.of(cafe, pan));
 
-        Producto editado = new Producto(
-                "CAF-01", "Café grande", new BigDecimal("2.50"), 0, 0
-        );
+        Producto editado = ValidarEdicionProducto.validar(
+        cafe,
+        "Café grande",
+        "2,50",
+        "0",
+        "0"
+);
 
         List<Producto> resultado = servicio.actualizarProducto(editado);
 
@@ -65,6 +70,32 @@ public class PruebaActualizarProducto {
                 "El otro producto debe permanecer intacto.");
 
         String contenidoAnterior = Files.readString(archivo);
+        
+        try {
+    Producto invalido = ValidarEdicionProducto.validar(
+            guardado,
+            "Café grande",
+            "abc",
+            "0",
+            "0"
+    );
+
+    servicio.actualizarProducto(invalido);
+
+    throw new AssertionError(
+            "El precio con letras debía rechazarse."
+    );
+
+} catch (IllegalArgumentException esperado) {
+    System.out.println(
+            "OK: la validación rechazó la edición inválida."
+    );
+}
+
+comprobar(
+        Files.readString(archivo).equals(contenidoAnterior),
+        "La edición rechazada no debe modificar el archivo."
+);
 
         comprobarRechazo(servicio, new Producto(
                 "NO-EXISTE", "Otro", BigDecimal.ONE, 0, 0
