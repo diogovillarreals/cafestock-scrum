@@ -22,7 +22,7 @@ import java.util.Objects;
  *
  * @author Dell G15
  */
-public class GestorInventarioArchivo {
+public class GestorInventarioArchivo implements RepositorioProductos {
 
     private static final String SEPARADOR = "\t";
     private static final int CANTIDAD_CAMPOS = 5;
@@ -42,6 +42,7 @@ public class GestorInventarioArchivo {
         return rutaArchivo;
     }
 
+    @Override
     public void guardar(List<Producto> productos) {
         Objects.requireNonNull(productos, "La lista de productos no puede ser nula.");
 
@@ -78,6 +79,7 @@ public class GestorInventarioArchivo {
         }
     }
 
+    @Override
     public List<Producto> cargar() {
         if (Files.notExists(rutaArchivo)) {
             return new ArrayList<>();

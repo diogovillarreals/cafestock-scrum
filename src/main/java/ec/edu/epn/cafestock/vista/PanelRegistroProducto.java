@@ -253,9 +253,17 @@ public class PanelRegistroProducto extends javax.swing.JPanel {
 
             Producto producto = new Producto(codigo, nombre, precio, stockActual, stockMinimo);
 
-            if (alGuardar != null) {
-                alGuardar.accept(producto);
+            if (alGuardar == null) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "El formulario todavía no está conectado al almacenamiento.",
+                        "Registro no disponible",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
             }
+
+            alGuardar.accept(producto);
 
             JOptionPane.showMessageDialog(
                     this,
@@ -271,6 +279,14 @@ public class PanelRegistroProducto extends javax.swing.JPanel {
                     error.getMessage(),
                     "Datos inválidos",
                     JOptionPane.WARNING_MESSAGE
+            );
+
+        } catch (IllegalStateException error) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    error.getMessage(),
+                    "No se pudo guardar",
+                    JOptionPane.ERROR_MESSAGE
             );
         }
     }
