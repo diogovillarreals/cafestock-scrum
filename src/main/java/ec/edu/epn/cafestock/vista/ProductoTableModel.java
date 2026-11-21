@@ -17,6 +17,13 @@ public class ProductoTableModel extends AbstractTableModel {
 
     private List<Producto> productos = List.of();
 
+    public Producto obtenerProductoEn(int fila) {
+    if (fila < 0 || fila >= productos.size()) {
+        return null;
+    }
+    return productos.get(fila);
+}
+    
     @Override
     public int getRowCount() {
         return productos.size();
