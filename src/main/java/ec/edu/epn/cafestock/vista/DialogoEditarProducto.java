@@ -4,8 +4,8 @@
  */
 package ec.edu.epn.cafestock.vista;
 import ec.edu.epn.cafestock.modelo.Producto;
-import ec.edu.epn.cafestock.validacion.ValidarCampos;
-import java.math.BigDecimal;
+
+import java.util.Optional;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javax.swing.JOptionPane;
@@ -72,18 +72,18 @@ public class DialogoEditarProducto extends javax.swing.JDialog {
         }
 
         try {
-            String nombre = ValidarCampos.validarObligatorio(TxtFieldNombre.getText(), "Nombre");
-            BigDecimal precio = ValidarCampos.validarPrecio(TxtFieldPrecio.getText());
-            int stockActual = ValidarCampos.validarStock(TxtFieldStockA.getText(), "Stock actual");
-            int stockMinimo = ValidarCampos.validarStock(TxtFieldStockM.getText(), "Stock mínimo");
-
-            Producto actualizado = new Producto(
-                    productoOriginal.getCodigo(),
-                    nombre,
-                    precio,
-                    stockActual,
-                    stockMinimo
+            Optional<Producto> resultado = ValidacionFormularioEdicion.validar(
+                    this,
+                    productoOriginal,
+                    TxtFieldNombre.getText(),
+                    TxtFieldPrecio.getText(),
+                    TxtFieldStockA.getText(),
+                    TxtFieldStockM.getText()
             );
+            if (resultado.isEmpty()) {
+                return;
+            }
+            Producto actualizado = resultado.get();
 
             if (alGuardar == null) {
                 JOptionPane.showMessageDialog(

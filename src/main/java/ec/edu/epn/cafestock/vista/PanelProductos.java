@@ -86,43 +86,15 @@ public class PanelProductos extends javax.swing.JPanel {
                 true,
                 seleccionado,
                 editado -> {
-                    if (alGuardarEdicion != null) {
-                        alGuardarEdicion.accept(editado);
+                    if (alGuardarEdicion == null) {
+                        throw new IllegalStateException(
+                                "La edición no está conectada al almacenamiento."
+                        );
                     }
-                    refrescarProductoEnLista(editado);
+                    alGuardarEdicion.accept(editado);
                 }
         );
         dialogo.setVisible(true);
-    }
-
-    private void refrescarProductoEnLista(Producto editado) {
-        List<Producto> nuevaLista = new ArrayList<>();
-        boolean reemplazado = false;
-
-        for (Producto item : productosCompletos) {
-            if (item != null && item.getCodigo().equalsIgnoreCase(editado.getCodigo())) {
-                nuevaLista.add(editado);
-                reemplazado = true;
-            } else if (item != null) {
-                nuevaLista.add(item);
-            }
-        }
-
-        if (!reemplazado) {
-            for (int i = 0; i < modeloTabla.getRowCount(); i++) {
-                Producto item = modeloTabla.obtenerProductoEn(i);
-                if (item != null) {
-                    if (item.getCodigo().equalsIgnoreCase(editado.getCodigo())) {
-                        nuevaLista.add(editado);
-                    } else {
-                        nuevaLista.add(item);
-                    }
-                }
-            }
-        }
-
-        this.productosCompletos = nuevaLista;
-        filtrarProductos();
     }
 
     /**
