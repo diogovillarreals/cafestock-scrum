@@ -10,4 +10,21 @@
         <maven.compiler.release>17</maven.compiler.release>
         <exec.mainClass>ec.edu.epn.cafestock.Cafestock</exec.mainClass>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>ec.edu.epn.cafestock.Cafestock</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
