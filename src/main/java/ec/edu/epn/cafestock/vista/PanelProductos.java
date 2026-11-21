@@ -3,8 +3,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
  */
 package ec.edu.epn.cafestock.vista;
+
 import ec.edu.epn.cafestock.modelo.Producto;
 import java.util.List;
+import ec.edu.epn.cafestock.negocio.BuscadorProductos;
+import java.util.ArrayList;
 
 /**
  *
@@ -16,18 +19,30 @@ public class PanelProductos extends javax.swing.JPanel {
      * Creates new form PanelProductos
      */
     private final ProductoTableModel modeloTabla = new ProductoTableModel();
-    
-    public PanelProductos() {
-    initComponents();
+    private List<Producto> productosCompletos = new ArrayList<>();
 
-    tablaProductos.setModel(modeloTabla);
-    tablaProductos.setFillsViewportHeight(true);
-    tablaProductos.getTableHeader().setReorderingAllowed(false);
-}
-    
+    public PanelProductos() {
+        initComponents();
+
+        tablaProductos.setModel(modeloTabla);
+        tablaProductos.setFillsViewportHeight(true);
+        tablaProductos.getTableHeader().setReorderingAllowed(false);
+    }
+
     public void mostrarProductos(List<Producto> productos) {
-    modeloTabla.actualizarProductos(productos);
-}
+        this.productosCompletos = (productos == null)
+                ? new ArrayList<>()
+                : new ArrayList<>(productos);
+        filtrarProductos();
+    }
+
+    private void filtrarProductos() {
+        List<Producto> filtrados = BuscadorProductos.buscar(
+                productosCompletos,
+                txtBusqueda.getText()
+        );
+        modeloTabla.actualizarProductos(filtrados);
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -38,13 +53,64 @@ public class PanelProductos extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        panelSuperior = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        panelBusqueda = new javax.swing.JPanel();
+        panelBotones = new javax.swing.JPanel();
+        btnMostrarTodos = new javax.swing.JButton();
+        btnBuscar = new javax.swing.JButton();
+        lblCodigoNombre = new javax.swing.JLabel();
+        txtBusqueda = new javax.swing.JTextField();
         jScrollPane1 = new javax.swing.JScrollPane();
         tablaProductos = new javax.swing.JTable();
-        jLabel1 = new javax.swing.JLabel();
 
         setBackground(new java.awt.Color(250, 248, 245));
         setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 16, 20, 20));
         setLayout(new java.awt.BorderLayout());
+
+        panelSuperior.setBackground(new java.awt.Color(250, 248, 245));
+        panelSuperior.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 12, 0));
+        panelSuperior.setLayout(new java.awt.BorderLayout());
+
+        jLabel1.setFont(new java.awt.Font("SansSerif", 1, 24)); // NOI18N
+        jLabel1.setForeground(new java.awt.Color(35, 23, 16));
+        jLabel1.setText("Productos registrados");
+        jLabel1.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 18, 0));
+        panelSuperior.add(jLabel1, java.awt.BorderLayout.PAGE_START);
+
+        panelBusqueda.setBackground(new java.awt.Color(250, 248, 245));
+        panelBusqueda.setLayout(new java.awt.BorderLayout(8, 0));
+
+        panelBotones.setBackground(new java.awt.Color(250, 248, 245));
+
+        btnMostrarTodos.setBackground(new java.awt.Color(235, 222, 209));
+        btnMostrarTodos.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        btnMostrarTodos.setForeground(new java.awt.Color(35, 23, 16));
+        btnMostrarTodos.setText("Mostrar todos");
+        btnMostrarTodos.addActionListener(this::btnMostrarTodosActionPerformed);
+        panelBotones.add(btnMostrarTodos);
+
+        btnBuscar.setBackground(new java.awt.Color(235, 222, 209));
+        btnBuscar.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        btnBuscar.setForeground(new java.awt.Color(35, 23, 16));
+        btnBuscar.setText("Buscar");
+        btnBuscar.addActionListener(this::btnBuscarActionPerformed);
+        panelBotones.add(btnBuscar);
+
+        panelBusqueda.add(panelBotones, java.awt.BorderLayout.LINE_END);
+
+        panelSuperior.add(panelBusqueda, java.awt.BorderLayout.PAGE_END);
+
+        lblCodigoNombre.setFont(new java.awt.Font("SansSerif", 1, 13)); // NOI18N
+        lblCodigoNombre.setForeground(new java.awt.Color(35, 23, 16));
+        lblCodigoNombre.setText("Código o nombre: ");
+        panelSuperior.add(lblCodigoNombre, java.awt.BorderLayout.LINE_START);
+
+        txtBusqueda.setFont(new java.awt.Font("SansSerif", 0, 13)); // NOI18N
+        txtBusqueda.addActionListener(this::txtBusquedaActionPerformed);
+        panelSuperior.add(txtBusqueda, java.awt.BorderLayout.CENTER);
+
+        add(panelSuperior, java.awt.BorderLayout.PAGE_START);
 
         jScrollPane1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(232, 223, 216)));
 
@@ -69,18 +135,32 @@ public class PanelProductos extends javax.swing.JPanel {
         jScrollPane1.setViewportView(tablaProductos);
 
         add(jScrollPane1, java.awt.BorderLayout.CENTER);
-
-        jLabel1.setFont(new java.awt.Font("SansSerif", 1, 24)); // NOI18N
-        jLabel1.setForeground(new java.awt.Color(35, 23, 16));
-        jLabel1.setText("Productos registrados");
-        jLabel1.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 18, 0));
-        add(jLabel1, java.awt.BorderLayout.PAGE_START);
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btnBuscarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBuscarActionPerformed
+        filtrarProductos();
+    }//GEN-LAST:event_btnBuscarActionPerformed
+
+    private void btnMostrarTodosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMostrarTodosActionPerformed
+        txtBusqueda.setText("");
+        filtrarProductos();
+    }//GEN-LAST:event_btnMostrarTodosActionPerformed
+
+    private void txtBusquedaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtBusquedaActionPerformed
+        filtrarProductos();
+    }//GEN-LAST:event_txtBusquedaActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnBuscar;
+    private javax.swing.JButton btnMostrarTodos;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JLabel lblCodigoNombre;
+    private javax.swing.JPanel panelBotones;
+    private javax.swing.JPanel panelBusqueda;
+    private javax.swing.JPanel panelSuperior;
     private javax.swing.JTable tablaProductos;
+    private javax.swing.JTextField txtBusqueda;
     // End of variables declaration//GEN-END:variables
 }
