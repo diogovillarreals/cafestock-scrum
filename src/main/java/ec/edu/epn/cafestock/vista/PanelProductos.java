@@ -5,6 +5,7 @@
 package ec.edu.epn.cafestock.vista;
 import ec.edu.epn.cafestock.modelo.Producto;
 import java.util.List;
+
 /**
  *
  * @author diogo
@@ -20,7 +21,6 @@ public class PanelProductos extends javax.swing.JPanel {
     initComponents();
 
     tablaProductos.setModel(modeloTabla);
-    tablaProductos.setRowHeight(26);
     tablaProductos.setFillsViewportHeight(true);
     tablaProductos.getTableHeader().setReorderingAllowed(false);
 }
@@ -40,9 +40,16 @@ public class PanelProductos extends javax.swing.JPanel {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         tablaProductos = new javax.swing.JTable();
+        jLabel1 = new javax.swing.JLabel();
 
+        setBackground(new java.awt.Color(250, 248, 245));
+        setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 16, 20, 20));
         setLayout(new java.awt.BorderLayout());
 
+        jScrollPane1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(232, 223, 216)));
+
+        tablaProductos.setFont(new java.awt.Font("SansSerif", 0, 13)); // NOI18N
+        tablaProductos.setForeground(new java.awt.Color(35, 23, 16));
         tablaProductos.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
@@ -54,13 +61,25 @@ public class PanelProductos extends javax.swing.JPanel {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
+        tablaProductos.setGridColor(new java.awt.Color(232, 223, 216));
+        tablaProductos.setRowHeight(34);
+        tablaProductos.setSelectionBackground(new java.awt.Color(84, 53, 28));
+        tablaProductos.setSelectionForeground(new java.awt.Color(255, 255, 255));
+        tablaProductos.setShowHorizontalLines(true);
         jScrollPane1.setViewportView(tablaProductos);
 
         add(jScrollPane1, java.awt.BorderLayout.CENTER);
+
+        jLabel1.setFont(new java.awt.Font("SansSerif", 1, 24)); // NOI18N
+        jLabel1.setForeground(new java.awt.Color(35, 23, 16));
+        jLabel1.setText("Productos registrados");
+        jLabel1.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 18, 0));
+        add(jLabel1, java.awt.BorderLayout.PAGE_START);
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable tablaProductos;
     // End of variables declaration//GEN-END:variables
