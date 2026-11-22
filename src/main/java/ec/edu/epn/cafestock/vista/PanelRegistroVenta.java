@@ -6,8 +6,10 @@ package ec.edu.epn.cafestock.vista;
 
 import ec.edu.epn.cafestock.modelo.Producto;
 import ec.edu.epn.cafestock.modelo.Venta;
+import ec.edu.epn.cafestock.negocio.CalculadoraTotalVenta;
 import ec.edu.epn.cafestock.servicio.ServicioProductos;
 import ec.edu.epn.cafestock.validacion.ValidadorVenta;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -20,12 +22,16 @@ import java.time.ZoneId;
 import java.text.ParseException;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerDateModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 /**
  *
  * @author Dell G15
  */
 public class PanelRegistroVenta extends javax.swing.JPanel {
+    private static final String SIN_TOTAL = "Total: —";
+
     private ServicioProductos servicioProductos;
     private Consumer<Venta> alRegistrar;
 
@@ -55,9 +61,40 @@ public class PanelRegistroVenta extends javax.swing.JPanel {
         cargarProductos();
     }
     
-    private void configurarFormulario() {    
-        
+    private void configurarFormulario() {
         configurarSelectorFecha();
+        cboProducto.addActionListener(evento -> actualizarTotal());
+        txtCantidad.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent evento) {
+                actualizarTotal();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent evento) {
+                actualizarTotal();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent evento) {
+                actualizarTotal();
+            }
+        });
+    }
+
+    private void actualizarTotal() {
+        Producto producto = obtenerProductoSeleccionado();
+        int cantidad;
+        try {
+            cantidad = ValidadorVenta.validarCantidadContraStock(txtCantidad.getText(), producto);
+        } catch (IllegalArgumentException error) {
+            lblTotalVenta.setText(SIN_TOTAL);
+            return;
+        }
+
+        BigDecimal total = CalculadoraTotalVenta.calcular(producto.getPrecio(), cantidad);
+        String importe = total.setScale(Math.max(2, total.scale())).toPlainString();
+        lblTotalVenta.setText("Total: USD " + importe.replace('.', ','));
     }
     
     private void configurarSelectorFecha() {
@@ -93,6 +130,7 @@ public class PanelRegistroVenta extends javax.swing.JPanel {
     }
 
     private void cargarProductos() {
+        lblTotalVenta.setText(SIN_TOTAL);
 
         try {
 
@@ -289,6 +327,7 @@ public class PanelRegistroVenta extends javax.swing.JPanel {
         cboProducto = new javax.swing.JComboBox<>();
         lblCantidad = new javax.swing.JLabel();
         spnFechaVenta = new javax.swing.JSpinner();
+        lblTotalVenta = new javax.swing.JLabel();
 
         jPanel1.setBackground(new java.awt.Color(250, 248, 245));
 
@@ -341,6 +380,10 @@ public class PanelRegistroVenta extends javax.swing.JPanel {
         lblCantidad.setForeground(new java.awt.Color(84, 53, 28));
         lblCantidad.setText("Cantidad");
 
+        lblTotalVenta.setFont(new java.awt.Font("SansSerif", 1, 16)); // NOI18N
+        lblTotalVenta.setForeground(new java.awt.Color(84, 53, 28));
+        lblTotalVenta.setText("Total: —");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -357,7 +400,8 @@ public class PanelRegistroVenta extends javax.swing.JPanel {
                                 .addComponent(lblCantidad)
                                 .addComponent(lblProducto)
                                 .addComponent(spnFechaVenta, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(txtCantidad))
+                                .addComponent(txtCantidad)
+                                .addComponent(lblTotalVenta))
                             .addComponent(lblTitulo)
                             .addComponent(lblSubtitulo)))
                     .addGroup(jPanel2Layout.createSequentialGroup()
@@ -397,7 +441,9 @@ public class PanelRegistroVenta extends javax.swing.JPanel {
                 .addComponent(lblFechaVenta)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(spnFechaVenta, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(lblTotalVenta)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
                 .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -479,6 +525,7 @@ public class PanelRegistroVenta extends javax.swing.JPanel {
     private javax.swing.JLabel lblProducto;
     private javax.swing.JLabel lblSubtitulo;
     private javax.swing.JLabel lblTitulo;
+    private javax.swing.JLabel lblTotalVenta;
     private javax.swing.JPanel pnlContenido;
     private javax.swing.JSpinner spnFechaVenta;
     private javax.swing.JTextField txtCantidad;
