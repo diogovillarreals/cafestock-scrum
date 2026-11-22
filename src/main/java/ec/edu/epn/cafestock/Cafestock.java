@@ -6,6 +6,7 @@ import ec.edu.epn.cafestock.persistencia.GestorInventarioArchivo.PersistenciaInv
 import ec.edu.epn.cafestock.servicio.ServicioProductos;
 import ec.edu.epn.cafestock.vista.PanelProductos;
 import ec.edu.epn.cafestock.vista.PanelRegistroProducto;
+import ec.edu.epn.cafestock.vista.PanelRegistroVenta;
 import ec.edu.epn.cafestock.vista.VentanaPrincipal;
 import java.util.List;
 import javax.swing.JOptionPane;
@@ -82,11 +83,21 @@ public class Cafestock {
                     );
                 });
 
+        PanelRegistroVenta panelRegistroVenta
+                = new PanelRegistroVenta(servicio, venta -> {
+
+                    List<Producto> productosActualizados
+                            = servicio.registrarVenta(venta);
+
+                    panelProductos.mostrarProductos(productosActualizados);
+                });
+
         VentanaPrincipal ventana = new VentanaPrincipal(
                 panelRegistro,
+                panelRegistroVenta,
                 panelProductos
         );
-
+        
         ventana.setVisible(true);
     }
 }
