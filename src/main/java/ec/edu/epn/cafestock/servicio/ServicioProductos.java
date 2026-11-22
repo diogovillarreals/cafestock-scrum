@@ -7,6 +7,9 @@ import java.util.Objects;
 import ec.edu.epn.cafestock.validacion.ValidarCampos;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import ec.edu.epn.cafestock.modelo.Venta;
+import ec.edu.epn.cafestock.negocio.CalculadoraTotalVenta;
+import ec.edu.epn.cafestock.validacion.ValidadorVenta;
 
 public class ServicioProductos {
 
@@ -35,6 +38,10 @@ public class ServicioProductos {
         return registro.registrar(producto);
     }
     public List<Producto> actualizarProducto(Producto editado) {
+        return repositorio.conBloqueoDeEscritura(() -> aplicarEdicion(editado));
+    }
+
+    private List<Producto> aplicarEdicion(Producto editado) {
     if (editado == null) {
         throw new IllegalArgumentException(
                 "Selecciona un producto para editar."
@@ -101,5 +108,73 @@ public class ServicioProductos {
     repositorio.guardar(productos);
 
     return List.copyOf(productos);
+    
+    
 }
+    public List<Producto> registrarVenta(Venta venta) {
+        return repositorio.conBloqueoDeEscritura(() -> guardarVentaConStockActualizado(venta));
+    }
+
+    private List<Producto> guardarVentaConStockActualizado(Venta venta) {
+        if (venta == null || venta.getProducto() == null) {
+            throw new IllegalArgumentException(
+                    "La venta y el producto son obligatorios."
+            );
+        }
+
+        List<Producto> productos
+                = new ArrayList<>(repositorio.cargar());
+
+        // Buscar el producto por su código
+        String codigo = venta.getProducto().getCodigo();
+
+        int posicion = -1;
+
+        for (int i = 0; i < productos.size(); i++) {
+
+            if (productos.get(i).getCodigo()
+                    .strip()
+                    .equalsIgnoreCase(codigo.strip())) {
+
+                posicion = i;
+                break;
+            }
+        }
+
+        if (posicion == -1) {
+            throw new IllegalArgumentException(
+                    "El producto no existe en el inventario."
+            );
+        }
+
+        Producto original = productos.get(posicion);
+
+        int cantidad = ValidadorVenta.validarCantidadContraStock(
+                String.valueOf(venta.getCantidad()),
+                original
+        );
+
+        BigDecimal precioConfirmado = venta.getProducto().getPrecio();
+        if (precioConfirmado == null || original.getPrecio().compareTo(precioConfirmado) != 0) {
+            throw new IllegalArgumentException(
+                    "El precio cambió. Vuelve a abrir Registrar venta y revisa el total actualizado.");
+        }
+
+        BigDecimal total = CalculadoraTotalVenta.calcular(original.getPrecio(), cantidad);
+        int nuevoStock = original.getStockActual() - cantidad;
+
+        Producto actualizado = new Producto(
+                original.getCodigo(),
+                original.getNombre(),
+                original.getPrecio(),
+                nuevoStock,
+                original.getStockMinimo()
+        );
+
+        productos.set(posicion, actualizado);
+
+        repositorio.guardarVenta(productos, new Venta(original, cantidad, venta.getFechaVenta()), total);
+
+        return List.copyOf(productos);
+    }
 }

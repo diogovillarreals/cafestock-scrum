@@ -16,7 +16,11 @@ public class RegistroProductos {
         this.gestorInventario = Objects.requireNonNull(gestorInventario);
     }
 
-    public synchronized List<Producto> registrar(Producto producto) {
+    public List<Producto> registrar(Producto producto) {
+        return gestorInventario.conBloqueoDeEscritura(() -> registrarProducto(producto));
+    }
+
+    private List<Producto> registrarProducto(Producto producto) {
         String codigo = ValidarCampos.validarObligatorio(producto.getCodigo(), "Código");
         String codigoNormalizado = codigo.toUpperCase(Locale.ROOT);
         List<Producto> productos = new ArrayList<>(gestorInventario.cargar());
