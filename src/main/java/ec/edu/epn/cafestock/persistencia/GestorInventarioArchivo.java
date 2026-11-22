@@ -5,21 +5,29 @@
 package ec.edu.epn.cafestock.persistencia;
 
 import ec.edu.epn.cafestock.modelo.Producto;
+import ec.edu.epn.cafestock.modelo.Venta;
+import ec.edu.epn.cafestock.modelo.VentaRegistrada;
 import ec.edu.epn.cafestock.validacion.ValidarCampos;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Supplier;
 /**
  *
  * @author Dell G15
@@ -29,7 +37,12 @@ public class GestorInventarioArchivo implements RepositorioProductos {
     private static final char SEPARADOR = ',';
     private static final char COMILLA = '"';
     private static final int CANTIDAD_CAMPOS = 5;
+    private static final int CANTIDAD_CAMPOS_VENTA = 7;
+    private static final String TIPO_VENTA = "VENTA";
     private static final Path RUTA_POR_DEFECTO = Paths.get("data", "productos.csv");
+    private static final Path RUTA_BLOQUEO = Path.of(
+            System.getProperty("java.io.tmpdir"), "cafestock-inventario.lock");
+    private static final Object BLOQUEO_ARCHIVOS = new Object();
 
     private final Path rutaArchivo;
 
@@ -46,14 +59,55 @@ public class GestorInventarioArchivo implements RepositorioProductos {
     }
 
     @Override
+    public <T> T conBloqueoDeEscritura(Supplier<T> operacion) {
+        // Una escritura iniciada por el servicio ya tiene el bloqueo de archivo.
+        if (Thread.holdsLock(BLOQUEO_ARCHIVOS)) {
+            return operacion.get();
+        }
+        synchronized (BLOQUEO_ARCHIVOS) {
+            try (FileChannel canal = FileChannel.open(
+                        RUTA_BLOQUEO, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                    FileLock bloqueo = canal.lock()) {
+                return operacion.get();
+            } catch (IOException error) {
+                throw new PersistenciaInventarioException(
+                        "No se pudo bloquear el inventario para guardar los cambios.", error);
+            }
+        }
+    }
+
+    @Override
     public void guardar(List<Producto> productos) {
+        conBloqueoDeEscritura(() -> {
+            guardarEstado(productos, cargarEstado().ventas());
+            return null;
+        });
+    }
+
+    @Override
+    public void guardarVenta(List<Producto> productosActualizados, Venta venta, BigDecimal total) {
+        conBloqueoDeEscritura(() -> {
+            List<VentaRegistrada> ventas = cargarEstado().ventas();
+            long ultimoNumero = ventas.stream().mapToLong(VentaRegistrada::numero).max().orElse(0);
+            Producto producto = venta.getProducto();
+            ventas.add(new VentaRegistrada(Math.incrementExact(ultimoNumero), venta.getFechaVenta(),
+                    producto.getCodigo(), producto.getNombre(), venta.getCantidad(), total));
+            guardarEstado(productosActualizados, ventas);
+            return null;
+        });
+    }
+
+    private void guardarEstado(List<Producto> productos, List<VentaRegistrada> ventas) {
         Objects.requireNonNull(productos, "La lista de productos no puede ser nula.");
 
-        List<String> lineasCsv = new ArrayList<>(productos.size());
+        List<String> lineasCsv = new ArrayList<>(productos.size() + ventas.size());
         for (int i = 0; i < productos.size(); i++) {
             Producto producto = productos.get(i);
             validarProductoParaGuardar(producto, i + 1);
             lineasCsv.add(formatearProductoCsv(producto));
+        }
+        for (VentaRegistrada venta : ventas) {
+            lineasCsv.add(formatearVentaCsv(venta));
         }
 
         Path archivoTemporal = null;
@@ -95,20 +149,33 @@ public class GestorInventarioArchivo implements RepositorioProductos {
 
     @Override
     public List<Producto> cargar() {
+        return cargarEstado().productos();
+    }
+
+    public List<VentaRegistrada> cargarVentas() {
+        return List.copyOf(cargarEstado().ventas());
+    }
+
+    private EstadoInventario cargarEstado() {
+        List<Producto> productos = new ArrayList<>();
+        List<VentaRegistrada> ventas = new ArrayList<>();
         if (Files.notExists(rutaArchivo)) {
-            return new ArrayList<>();
+            return new EstadoInventario(productos, ventas);
         }
 
         try (BufferedReader reader = Files.newBufferedReader(rutaArchivo, StandardCharsets.UTF_8)) {
             LectorCsv lector = new LectorCsv(reader, rutaArchivo);
             List<RegistroCsv> registros = lector.leerTodosLosRegistros();
-            List<Producto> productos = new ArrayList<>(registros.size());
-
             for (RegistroCsv registro : registros) {
-                productos.add(convertirRegistroAProducto(registro));
+                if (registro.campos.size() == CANTIDAD_CAMPOS_VENTA
+                        && TIPO_VENTA.equals(registro.campos.get(0))) {
+                    ventas.add(convertirRegistroAVenta(registro));
+                } else {
+                    productos.add(convertirRegistroAProducto(registro));
+                }
             }
 
-            return productos;
+            return new EstadoInventario(productos, ventas);
         } catch (IOException e) {
             throw new PersistenciaInventarioException(
                     "Error al cargar el inventario desde '" + rutaArchivo + "': " + e.getMessage(),
@@ -169,6 +236,26 @@ public class GestorInventarioArchivo implements RepositorioProductos {
                 + precio + SEPARADOR
                 + stockActual + SEPARADOR
                 + stockMinimo;
+    }
+
+    private String formatearVentaCsv(VentaRegistrada venta) {
+        return String.join(String.valueOf(SEPARADOR), TIPO_VENTA,
+                Long.toString(venta.numero()), venta.fechaVenta().toString(),
+                escaparCampoCsv(venta.codigoProducto()), escaparCampoCsv(venta.nombreProducto()),
+                Integer.toString(venta.cantidad()), venta.total().toPlainString());
+    }
+
+    private VentaRegistrada convertirRegistroAVenta(RegistroCsv registro) {
+        List<String> campos = registro.campos;
+        try {
+            return new VentaRegistrada(Long.parseLong(campos.get(1)), LocalDate.parse(campos.get(2)),
+                    campos.get(3), campos.get(4), Integer.parseInt(campos.get(5)),
+                    new BigDecimal(campos.get(6)));
+        } catch (IllegalArgumentException | DateTimeParseException error) {
+            throw new PersistenciaInventarioException(
+                    "Venta inválida en '" + rutaArchivo + "' (línea " + registro.lineaInicio + ").",
+                    error);
+        }
     }
 
     private String escaparCampoCsv(String valor) {
@@ -298,6 +385,9 @@ public class GestorInventarioArchivo implements RepositorioProductos {
         } catch (IOException exBorrado) {
             causaOriginal.addSuppressed(exBorrado);
         }
+    }
+
+    private record EstadoInventario(List<Producto> productos, List<VentaRegistrada> ventas) {
     }
 
     private static final class RegistroCsv {

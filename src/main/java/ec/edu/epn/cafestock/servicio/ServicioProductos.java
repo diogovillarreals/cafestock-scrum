@@ -8,6 +8,7 @@ import ec.edu.epn.cafestock.validacion.ValidarCampos;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import ec.edu.epn.cafestock.modelo.Venta;
+import ec.edu.epn.cafestock.negocio.CalculadoraTotalVenta;
 import ec.edu.epn.cafestock.validacion.ValidadorVenta;
 
 public class ServicioProductos {
@@ -37,6 +38,10 @@ public class ServicioProductos {
         return registro.registrar(producto);
     }
     public List<Producto> actualizarProducto(Producto editado) {
+        return repositorio.conBloqueoDeEscritura(() -> aplicarEdicion(editado));
+    }
+
+    private List<Producto> aplicarEdicion(Producto editado) {
     if (editado == null) {
         throw new IllegalArgumentException(
                 "Selecciona un producto para editar."
@@ -107,7 +112,10 @@ public class ServicioProductos {
     
 }
     public List<Producto> registrarVenta(Venta venta) {
+        return repositorio.conBloqueoDeEscritura(() -> guardarVentaConStockActualizado(venta));
+    }
 
+    private List<Producto> guardarVentaConStockActualizado(Venta venta) {
         if (venta == null || venta.getProducto() == null) {
             throw new IllegalArgumentException(
                     "La venta y el producto son obligatorios."
@@ -146,6 +154,13 @@ public class ServicioProductos {
                 original
         );
 
+        BigDecimal precioConfirmado = venta.getProducto().getPrecio();
+        if (precioConfirmado == null || original.getPrecio().compareTo(precioConfirmado) != 0) {
+            throw new IllegalArgumentException(
+                    "El precio cambió. Vuelve a abrir Registrar venta y revisa el total actualizado.");
+        }
+
+        BigDecimal total = CalculadoraTotalVenta.calcular(original.getPrecio(), cantidad);
         int nuevoStock = original.getStockActual() - cantidad;
 
         Producto actualizado = new Producto(
@@ -158,7 +173,7 @@ public class ServicioProductos {
 
         productos.set(posicion, actualizado);
 
-        repositorio.guardar(productos);
+        repositorio.guardarVenta(productos, new Venta(original, cantidad, venta.getFechaVenta()), total);
 
         return List.copyOf(productos);
     }
