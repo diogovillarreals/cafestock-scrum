@@ -1,0 +1,6 @@
+CAF-001,Cafe Especial,1.5,10,2
+CAF-002,Cafe Americano,2,5,1
+TE-003,Te verde,1.25,5,1
+PAN-004,Pan Integral,0.80,7,1
+VENTA,1,2026-11-15,TE-003,Te verde,2,2.50
+VENTA,2,2026-11-11,TE-003,Te verde,3,3.75
